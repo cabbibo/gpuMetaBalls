@@ -1,0 +1,160 @@
+<html>
+<head>
+
+  <link rel="stylesheet" type="text/css" href="lib/main.css">
+  
+  <script src="lib/three.js"></script>
+  <script src="lib/jquery.min.js"></script>
+  <script src="lib/stats.min.js"></script>
+  <script src="lib/underscore.js"></script>
+  <script src="lib/TrackballControls.js"></script>
+  <script src="lib/Loader.js"></script>
+
+</head>
+<body>
+
+
+<script id="vs-density" type="x-shader/x-vertex" data-src="shaders/vs-density.js"></script>
+<script id="fs-density" type="x-shader/x-fragment" data-src="shaders/fs-density.js"></script>
+
+<script id="vs-voxel" type="x-shader/x-vertex" data-src="shaders/vs-voxel.js"></script>
+<script id="fs-voxel" type="x-shader/x-fragment" data-src="shaders/fs-voxel.js"></script>
+
+<script id="vs-render" type="x-shader/x-vertex" data-src="shaders/vs-render.js"></script>
+<script id="fs-render" type="x-shader/x-fragment" data-src="shaders/fs-render.js"></script>
+
+  
+<script>
+
+
+  
+  var camera, renderer, scene , controls ,stats;
+  var size;
+
+  var movementPlane;
+
+  var vs, fs;
+
+  var geometry, material , light;
+
+  var loader;
+
+  var vs = {};
+  var fs = {};
+
+  var loader = new Loader();
+
+  //var audioController = new AudioController();
+  //audioController.mute.gain.value = .0;
+
+ 
+  var vertexShaders       = $('script[type="x-shader/x-vertex"]');
+  var fragmentShaders     = $('script[type="x-shader/x-fragment"]');
+
+  console.log( vertexShaders );
+  console.log( fragmentShaders );
+  
+  loadShader( 'density',  vertexShaders[0]    , 'vertex'    );
+  loadShader( 'density',  fragmentShaders[0]  , 'fragment'  );
+  loadShader( 'voxel',    vertexShaders[1]    , 'vertex'    );
+  loadShader( 'voxel',    fragmentShaders[1]  , 'fragment'  );
+  loadShader( 'render',   vertexShaders[2]    , 'vertex'    );
+  loadShader( 'render',   fragmentShaders[2]  , 'fragment'  );
+
+  loader.loadBarAdd();
+    
+  function init(){
+
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+
+    camera = new THREE.PerspectiveCamera( 65 , w/h , 1 , 30000 );
+    camera.position.z = 3000;
+
+
+    //controls.speed=1;
+    controls = new THREE.TrackballControls( camera );
+    controls.rotateSpeed = 1;
+    controls.minDistance = 1000;
+    controls.maxDistance = 10000;
+    controls.dynamicDampingFactor = .1;
+    controls.noPan = true;
+    scene = new THREE.Scene();
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    stats = new Stats();
+    stats.domElement.id = "stats";
+
+    var geo = new THREE.CubeGeometry( 1000 , 1000 , 1000 );
+    var mat = new THREE.MeshNormalMaterial()
+    var mesh = new THREE.Mesh(geo,mat );
+    scene.add( mesh );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', onResize , false );
+
+    start();
+
+  }
+
+  function animate(){
+
+    requestAnimationFrame( animate );
+    stats.update();
+    controls.update();
+    renderer.render( scene , camera );
+  
+  }
+
+  function onResize() {
+    windowHalfX = window.innerWidth / 2;
+    windowHalfY = window.innerHeight / 2;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+
+  function start(){
+
+    loader.liftCurtain();
+    animate();
+
+  }
+
+  function loadShader( title , shader, type) {
+
+    loader.addToLoadBar();
+  
+    // wrap up the shader for convenience
+    var $shader = $(shader);
+    
+    // request the file over AJAX
+    $.ajax({
+        url: $shader.data('src'),
+        dataType: 'text',
+        context: {
+            name: $shader.data('name'),
+            type: type
+        },
+        complete: function(r){
+          loader.loadBarAdd();
+          if( type == 'vertex' ){
+            vs[title] = r.responseText;
+          }else{
+            fs[title] = r.responseText;
+          }
+
+        }
+    });
+    
+  }
+
+
+
+</script>
+
+
+</body>
+</html>
