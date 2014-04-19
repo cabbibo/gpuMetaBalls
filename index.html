@@ -9,6 +9,8 @@
   <script src="lib/underscore.js"></script>
   <script src="lib/TrackballControls.js"></script>
   <script src="lib/Loader.js"></script>
+  <script src="lib/GPGPU.js"></script>
+  <script src="lib/MarchingCubes.js"></script>
 
 </head>
 <body>
@@ -23,6 +25,10 @@
 <script id="vs-render" type="x-shader/x-vertex" data-src="shaders/vs-render.js"></script>
 <script id="fs-render" type="x-shader/x-fragment" data-src="shaders/fs-render.js"></script>
 
+<script id="vs-densityDebug" type="x-shader/x-vertex" data-src="shaders/vs-densityDebug.js"></script>
+<script id="fs-densityDebug" type="x-shader/x-fragment" data-src="shaders/fs-densityDebug.js"></script>
+
+
   
 <script>
 
@@ -34,6 +40,8 @@
   var movementPlane;
 
   var vs, fs;
+
+  var gpgpu, marchingCubes;
 
   var geometry, material , light;
 
@@ -60,8 +68,10 @@
   loadShader( 'voxel',    fragmentShaders[1]  , 'fragment'  );
   loadShader( 'render',   vertexShaders[2]    , 'vertex'    );
   loadShader( 'render',   fragmentShaders[2]  , 'fragment'  );
+  loadShader( 'densityDebug', vertexShaders[3]    , 'vertex'    );
+  loadShader( 'densityDebug', fragmentShaders[3]  , 'fragment'  );
 
-  loader.loadBarAdd();
+  //loader.loadBarAdd();
     
   function init(){
 
@@ -69,13 +79,14 @@
     var h = window.innerHeight;
 
     camera = new THREE.PerspectiveCamera( 65 , w/h , 1 , 30000 );
-    camera.position.z = 3000;
+    camera.position.z =300;
+    camera.position.x = -1;
 
 
     //controls.speed=1;
     controls = new THREE.TrackballControls( camera );
     controls.rotateSpeed = 1;
-    controls.minDistance = 1000;
+    controls.minDistance = 0;
     controls.maxDistance = 10000;
     controls.dynamicDampingFactor = .1;
     controls.noPan = true;
@@ -87,12 +98,16 @@
     stats = new Stats();
     stats.domElement.id = "stats";
 
-    var geo = new THREE.CubeGeometry( 1000 , 1000 , 1000 );
-    var mat = new THREE.MeshNormalMaterial()
+   // gpgpu = new GPGPU( renderer );
+
+    var geo = new THREE.CubeGeometry( 10000 , 10000 , 10000 );
+    var mat = new THREE.MeshNormalMaterial({side:THREE.BackSide});
     var mesh = new THREE.Mesh(geo,mat );
     scene.add( mesh );
     document.body.appendChild( renderer.domElement );
     window.addEventListener( 'resize', onResize , false );
+
+    marchingCubes = new MarchingCubes( 128 );
 
     start();
 
@@ -100,6 +115,7 @@
 
   function animate(){
 
+    marchingCubes.update();
     requestAnimationFrame( animate );
     stats.update();
     controls.update();
